@@ -1900,5 +1900,11 @@ def create_strategies_status(signals):
     return html.Div(status_items)
 
 # Run the app
+import os
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8050, debug=True)
+    host = os.getenv("HOST", "127.0.0.1")
+    port = int(os.getenv("PORT", "8051"))  # cai pra 8050 se não setar
+    debug = os.getenv("DEBUG", "False").lower() == "true"
+    app.run(host=host, port=port, debug=debug)
+
