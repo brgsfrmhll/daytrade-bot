@@ -1651,10 +1651,11 @@ def main_trading_loop(n, worker_on, run_mode, uni_data, debug_data):
         
         # Account summary
         acct_summary = (f"💰 Capital: {money(current_equity)} • "
-                       f"💵 Caixa: {money(acc.get('cash', 0.0))} (Binance: {money(binance_balances.get(quote, 0.0))}) • "
-                       f"📈 Realizado: {money(acc.get("daily_realized", 0.0))} • "
-                       f"🪙 Moedas: {", ".join([asset for asset, balance in binance_balances.items() if asset != quote and balance > 0])} • "
-                       f"🎯 {len([s for s in strategy_signals.values() if 'BUY' in s or 'SELL' in s])} sinais ativos")
+                f"💵 Caixa: {money(acc.get('cash', 0.0))} (Binance: {money(binance_balances.get(quote, 0.0))}) • "
+                f"📈 Realizado: {money(acc.get('daily_realized', 0.0))} • "
+                f"🪙 Moedas: {', '.join([asset for asset, balance in binance_balances.items() if asset != quote and balance > 0])} • "
+                f"🎯 {len([s for s in strategy_signals.values() if 'BUY' in s or 'SELL' in s])} sinais ativos")
+)
         
         return (
             main_chart, multi_chart, signals_data, orders_data, portfolio_data,
@@ -1902,9 +1903,9 @@ def create_strategies_status(signals):
 # Run the app
 import os
 
+
 if __name__ == "__main__":
-    host = os.getenv("HOST", "127.0.0.1")
-    port = int(os.getenv("PORT", "8051"))  # cai pra 8050 se não setar
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8051"))
     debug = os.getenv("DEBUG", "False").lower() == "true"
     app.run(host=host, port=port, debug=debug)
-
