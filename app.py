@@ -1650,13 +1650,13 @@ def main_trading_loop(n, worker_on, run_mode, uni_data, debug_data):
                         f"⏱️ Processado em {time.time()-t0:.2f}s")
         
         # Account summary
-        acct_summary = (f"💰 Capital: {money(current_equity)} • "
-                f"💵 Caixa: {money(acc.get('cash', 0.0))} (Binance: {money(binance_balances.get(quote, 0.0))}) • "
-                f"📈 Realizado: {money(acc.get('daily_realized', 0.0))} • "
-                f"🪙 Moedas: {', '.join([asset for asset, balance in binance_balances.items() if asset != quote and balance > 0])} • "
-                f"🎯 {len([s for s in strategy_signals.values() if 'BUY' in s or 'SELL' in s])} sinais ativos")
+        acct_summary = (
+    f"💰 Capital: {money(current_equity)} • "
+    f"💵 Caixa: {money(acc.get('cash', 0.0))} (Binance: {money(binance_balances.get(quote, 0.0))}) • "
+    f"📈 Realizado: {money(acc.get('daily_realized', 0.0))} • "
+    f"🪙 Moedas: {', '.join([asset for asset, balance in binance_balances.items() if asset != quote and balance > 0])} • "
+    f"🎯 {len([s for s in strategy_signals.values() if 'BUY' in s or 'SELL' in s])} sinais ativos"
 )
-        
         return (
             main_chart, multi_chart, signals_data, orders_data, portfolio_data,
             indicators_display, strategies_display, status_footer,
@@ -1902,6 +1902,7 @@ def create_strategies_status(signals):
 
 # Run the app
 import os
+
 
 
 if __name__ == "__main__":
