@@ -739,15 +739,29 @@ def money(x):
     try: return f"US$ {float(x):,.2f}"
     except: return "—"
 
+def fnum(x, default=0.0):
+    """Converte para float com fallback seguro."""
+    try:
+        if x is None:
+            return default
+        if isinstance(x, (int, float)):
+            return float(x)
+        s = str(x).strip()
+        if s == "":
+            return default
+        return float(s)
+    except (TypeError, ValueError):
+        return default
+
 def equity_value():
     acc = read_account()
     port = _read_json(FILES["portfolio"],{})
-    
-    eq = float(acc.get("cash",0.0))
+    eq = fnum(acc.get("cash", 0.0))
     for p in port.values():
-        eq += (p.get("quantity",0) or 0)*(p.get("last_price",0.0) or 0.0)
-    
+        eq += fnum(p.get("quantity", 0.0)) * fnum(p.get("last_price", 0.0))
     return float(eq)
+
+
 
 def ensure_port(symbol, last_price=None):
     port = _read_json(FILES["portfolio"],{})
@@ -774,7 +788,7 @@ def refresh_unrealized(symbol, last_price):
         p["last_price"] = float(last_price)
         qty = p.get("quantity",0.0)
         avg = p.get("avg_price",0.0)
-        p["unrealized"] = round((last_price-avg)*qty,4)  # Mais precisão
+        p["unrealized"] = round((fnum(last_price) - fnum(avg)) * fnum(qty), 4)  # Mais precisão
         
         if qty > 0:
             p["peak"] = max(p.get("peak") or last_price, last_price)
@@ -917,7 +931,7 @@ def binance_place_order(acc, symbol, side, type, quantity, price=None):
 
 def add_order_local(symbol, side, price, qty, signal_id, order_id=None, strategy=None, run_mode="paper"):
     acc_before = read_account()
-    cash_before = float(acc_before.get("cash",0.0))
+    cash_before = fnum(acc_before.get("cash", 0.0))
     
     # Se não for modo paper, tentar executar na Binance
     if run_mode != "paper":
@@ -951,19 +965,19 @@ def add_order_local(symbol, side, price, qty, signal_id, order_id=None, strategy
     _write_json(FILES["orders"], orders)
     
     # Calculate fees and PnL
-    gross = exec_price * exec_qty
-    fees = gross * float(acc_before.get("fee_rate",0.001))
+    gross = fnum(exec_price) * fnum(exec_qty)
+    fees = gross * fnum(acc_before.get("fee_rate", 0.001))
     pnl_realized = 0.0
     
     if side == "buy":
-        acc_before["cash"] = round(acc_before.get("cash",0.0) - gross - fees, 4)
+        acc_before["cash"] = round(fnum(acc_before.get("cash", 0.0)) - gross - fees, 4)
     else:
-        acc_before["cash"] = round(acc_before.get("cash",0.0) + gross - fees, 4)
+        acc_before["cash"] = round(fnum(acc_before.get("cash", 0.0)) + gross - fees, 4)
         port = _read_json(FILES["portfolio"],{})
-        avg = port.get(symbol,{}).get("avg_price",0.0)
-        pnl_realized = (exec_price-avg)*exec_qty if avg>0 else 0.0
+        avg = fnum(port.get(symbol, {}).get("avg_price", 0.0))
+        pnl_realized = (fnum(exec_price) - avg) * fnum(exec_qty) if avg > 0 else 0.0
     
-    acc_before["daily_realized"] = round(acc_before.get("daily_realized",0.0) + pnl_realized - fees, 4)
+    acc_before["daily_realized"] = round(fnum(acc_before.get("daily_realized", 0.0)) + pnl_realized - fees, 4)
     write_account(acc_before)
     apply_to_portfolio(symbol, side, exec_price, exec_qty, strategy)
     
@@ -1589,10 +1603,10 @@ def main_trading_loop(n, worker_on, run_mode, uni_data, debug_data):
                         continue
                     
                     # Position sizing for small capital
-                    equity = equity_value()
-                    max_position = equity * acc.get("max_position_pct", 0.80)
-                    cash_available = acc.get("cash", 0.0)
-                    buffer = equity * acc.get("cash_buffer_pct", 0.05)
+                    equity = fnum(equity_value())
+                    max_position = equity * fnum(acc.get("max_position_pct", 0.80))
+                    cash_available = fnum(acc.get("cash", 0.0))
+                    buffer = equity * fnum(acc.get("cash_buffer_pct", 0.05))
                     
                     if signal == "buy":
                         buying_power = min(cash_available - buffer, max_position)
@@ -1635,13 +1649,13 @@ def main_trading_loop(n, worker_on, run_mode, uni_data, debug_data):
         strategies_display = create_strategies_status(strategy_signals)
         
         # Calculate metrics
-        base_equity = acc.get("base_equity", 18.0)
-        current_equity = equity_value()
-        total_pnl = current_equity - base_equity
-        return_pct = (total_pnl / base_equity * 100) if base_equity > 0 else 0
+        base_equity = fnum(acc.get("base_equity", 18.0), 18.0)
+        current_equity = fnum(equity_value())
+        total_pnl = fnum(current_equity) - fnum(base_equity)
+        return_pct = (total_pnl / base_equity * 100) if fnum(base_equity) > 0 else 0
         
         port = _read_json(FILES["portfolio"], {})
-        unrealized_total = sum(p.get("unrealized", 0.0) for p in port.values())
+        unrealized_total = sum(fnum(p.get("unrealized", 0.0)) for p in port.values())
         
         # Status footer
         status_footer = (f"🚀 Enhanced Bot • {len(universe)} ativos • "
